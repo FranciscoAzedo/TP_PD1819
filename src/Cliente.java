@@ -26,6 +26,20 @@ public class Cliente implements java.util.Observer{
         } while(i < 0 || i > 2);
     }
     
+    public static void atualizaUtilizadores(){
+        if(utilizadores.isEmpty()){
+            System.out.println("\n\n\nNão existem utilizadores logados\n");
+        }
+        else{
+            System.out.println("\n\n\nLISTA DE UTILIZADORES\n");
+            for(int j = 0; j < utilizadores.size(); j++){
+                System.out.println(j+1 + " - " + utilizadores.get(j));
+            }
+        }
+        System.out.println("0 - Anterior");
+        System.out.print("\n>> ");
+    }
+    
     public static void menuListaUtilizadores(){
         int i;
         Pedido_Utilizadores p = CM.getUtilizadores();
@@ -174,15 +188,34 @@ public class Cliente implements java.util.Observer{
             preencherDados(i);
     }
     
-    public static void main(String[] args) {
-        
+    public void start(){
         CM = new Client_Management();
+        CM.addObserver(this);
         sc = new Scanner(System.in);
-        menuInicial();        
+        menuInicial();
+    }
+    
+    public static void main(String[] args) {
+        Cliente cliente = new Cliente();
+        cliente.start();
     }
 
     @Override
     public void update(Observable o, Object arg) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if(arg instanceof String){
+            if(((String) arg).equalsIgnoreCase("Utilizadores")){
+                if (menuListUsers){
+                    utilizadores = CM.getUtilizadores().getUtilizadores();
+                    atualizaUtilizadores();                    
+                }
+                
+            }else if(((String) arg).equalsIgnoreCase("Utilizadores")){
+                
+            }else if(((String) arg).equalsIgnoreCase("Utilizadores")){
+                
+            }else{
+                
+            }
+        }
     }
 }

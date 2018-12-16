@@ -1,10 +1,12 @@
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 public class Servidor {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
@@ -17,13 +19,15 @@ public class Servidor {
     private static Connection conn = null;
     private static Statement stmt = null;
     private HashMap <Socket, String> clientes;
+    private HashMap <Socket, String> updates;
     
     protected ServerSocket serverSocket;
     
     public static final int SERVICE_PORT = 5001;
 
     public Servidor() {
-        this.clientes = new HashMap<>();
+        clientes = new HashMap<>();
+        updates = new HashMap<>();
         try {
             serverSocket = new ServerSocket(SERVICE_PORT);
         } catch (IOException e) {
@@ -33,22 +37,38 @@ public class Servidor {
    
     //funcao que recebe ligacoes tcp e lança threads para atender cientes
     public void receberClientes(){
+        boolean igual;
         while(true){
-            try {
+            igual = false;
+            try {                 
                 Socket cliente = serverSocket.accept();
-//                for(Socket s : clientes.keySet()) {
-//                    if (s.getLocalAddress() == cliente.getInetAddress())
-//                        System.out.println("Outra conexao");
-//                }
-                System.out.println(cliente.getInetAddress());
-                System.out.println(cliente.getLocalAddress());
-                System.out.println(cliente.getLocalSocketAddress());
-                System.out.println(cliente.getRemoteSocketAddress());
-                Thread t = new AtendeCliente(cliente, this);
-                t.setDaemon(true);
-                t.start();
+                for(Socket s : clientes.keySet()){
+                    if (s.getInetAddress().equals(cliente.getInetAddress())){
+                        //ObjectOutputStream objectOutputStream = new ObjectOutputStream(cliente.getOutputStream());
+                        updates.put(cliente, clientes.get(s));
+                        igual = true;
+                    }
+                }
+                if (!igual){
+                    Thread t = new AtendeCliente(cliente, this);
+                    t.setDaemon(true);
+                    t.start();
+                }
             } catch (IOException e) {
                 System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            }
+        }
+    }
+    
+    public void atualizarClientes(String tipo){
+        ObjectOutputStream out = null;
+        for(Socket c : updates.keySet()){
+            try {
+                out = new ObjectOutputStream(c.getOutputStream());
+                out.writeObject(tipo);
+                out.flush();
+            } catch (IOException e) {
+                System.out.println("Ocorreu um erro a enviar atualização para " + updates.get(c));                
             }
         }
     }
@@ -87,6 +107,12 @@ public class Servidor {
         try {
             String sql = "UPDATE Utilizadores SET Online = 0 WHERE Username = \"" + clientes.get(s) + "\"";
             stmt.executeUpdate(sql);
+            for (Iterator<Socket> it = updates.keySet().iterator(); it.hasNext();) {
+                Socket u = it.next();
+                if(u.getInetAddress().equals(s.getInetAddress()))
+                    it.remove();
+            }
+            atualizarClientes("Utilizadores");
         } catch (SQLException e) {
             System.out.println(e);
         }
@@ -110,6 +136,7 @@ public class Servidor {
                         sql = "UPDATE Utilizadores SET Online = 1 WHERE Username = \"" + username + "\"";
                         stmt.executeUpdate(sql);
                         clientes.put(s, username);
+                        atualizarClientes("Utilizadores");
                     }
                 }            
         } catch (SQLException se) {

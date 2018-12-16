@@ -66,9 +66,9 @@ public class Client_Management extends java.util.Observable {
         this.username = username;
         try {
             socket = new Socket(InetAddress.getByName(IP), SERVER_PORT);
-            socket.setSoTimeout(TIMEOUT*1000);   
-//            out = new ObjectOutputStream(socket.getOutputStream());
-//            in = new ObjectInputStream(socket.getInputStream());
+            Thread t = new Client_Update_Management(socket, this);
+            t.setDaemon(true);
+            t.start();
         } catch (IOException e) {
             System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
         }
@@ -81,6 +81,11 @@ public class Client_Management extends java.util.Observable {
             System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
         }
         username = null;
+    }
+    
+    public void update(String update){
+        setChanged();
+        notifyObservers(update);    
     }
     
 }
