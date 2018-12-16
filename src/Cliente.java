@@ -1,8 +1,9 @@
 
 import java.util.ArrayList;
+import java.util.Observable;
 import java.util.Scanner;
 
-public class Cliente {
+public class Cliente implements java.util.Observer{
     
     protected static Scanner sc = null;
     protected static Client_Management CM = null;
@@ -85,7 +86,7 @@ public class Cliente {
         switch(i){
             case 0:
                 menu = false;
-                // CM.logout(); falta implementar a parte de alterar variavel online no server
+                CM.logout(); //falta implementar a parte de alterar variavel online no server
                 menuInicial();
                 break;
             case 1:
@@ -178,5 +179,10 @@ public class Cliente {
         CM = new Client_Management();
         sc = new Scanner(System.in);
         menuInicial();        
+    }
+
+    @Override
+    public void update(Observable o, Object arg) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

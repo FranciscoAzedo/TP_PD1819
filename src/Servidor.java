@@ -1,13 +1,10 @@
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.HashMap;
 
 public class Servidor {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
@@ -19,12 +16,14 @@ public class Servidor {
     
     private static Connection conn = null;
     private static Statement stmt = null;
+    private HashMap <Socket, String> clientes;
     
     protected ServerSocket serverSocket;
     
     public static final int SERVICE_PORT = 5001;
 
     public Servidor() {
+        this.clientes = new HashMap<>();
         try {
             serverSocket = new ServerSocket(SERVICE_PORT);
         } catch (IOException e) {
@@ -36,7 +35,16 @@ public class Servidor {
     public void receberClientes(){
         while(true){
             try {
-                Thread t = new AtendeCliente(serverSocket.accept(), this);
+                Socket cliente = serverSocket.accept();
+//                for(Socket s : clientes.keySet()) {
+//                    if (s.getLocalAddress() == cliente.getInetAddress())
+//                        System.out.println("Outra conexao");
+//                }
+                System.out.println(cliente.getInetAddress());
+                System.out.println(cliente.getLocalAddress());
+                System.out.println(cliente.getLocalSocketAddress());
+                System.out.println(cliente.getRemoteSocketAddress());
+                Thread t = new AtendeCliente(cliente, this);
                 t.setDaemon(true);
                 t.start();
             } catch (IOException e) {
@@ -75,8 +83,18 @@ public class Servidor {
         return 1;
     }
     
+    public void efetuarLogout(Socket s){
+        try {
+            String sql = "UPDATE Utilizadores SET Online = 0 WHERE Username = \"" + clientes.get(s) + "\"";
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        clientes.remove(s);
+    }
+    
     //funcao para efetuar login
-    public int efetuarLogin(String username, String password){
+    public int efetuarLogin(String username, String password, Socket s){
         try {
             String sql = "SELECT * FROM Utilizadores WHERE Username = \"" + username + "\"";
             ResultSet rs = stmt.executeQuery(sql);
@@ -91,6 +109,7 @@ public class Servidor {
                     else{
                         sql = "UPDATE Utilizadores SET Online = 1 WHERE Username = \"" + username + "\"";
                         stmt.executeUpdate(sql);
+                        clientes.put(s, username);
                     }
                 }            
         } catch (SQLException se) {
@@ -143,70 +162,6 @@ public class Servidor {
                     conn.close();
             }catch(SQLException se){ 
                 se.printStackTrace();
-            }
-        }
-    }
-}
-
-class AtendeCliente extends Thread {
-    
-    private Socket cliente;
-    private static Servidor servidor;
-    private ObjectInputStream oin;
-    private ObjectOutputStream out;
-    
-    public AtendeCliente(Socket s, Servidor serv){
-        try {
-            cliente = s;
-            servidor = serv;
-            oin = new ObjectInputStream(cliente.getInputStream());
-            out = new ObjectOutputStream(cliente.getOutputStream());
-        } catch (IOException e) {
-                System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
-        }
-    } 
-    
-    public void run(){
-        while(!cliente.isClosed()){
-            try { 
-                Object pedido = oin.readObject();
-                if (pedido instanceof Pedido_Registo){                
-                    Pedido_Registo p = (Pedido_Registo) pedido;
-                    if(p.getTipo().equalsIgnoreCase("Registar")){
-                        switch(servidor.verificarUsername(p.getUsername())){
-                            case 1:
-                                p.resultado_Pedido(servidor.registarUser(p.getUsername(), p.getPassword()));
-                                break;
-                            case -1:
-                                p.resultado_Pedido(-1);
-                                break;
-                            case -2:
-                                p.resultado_Pedido(-2);
-                                break;
-                        }
-                    }
-                    else{
-                        p.resultado_Pedido(servidor.efetuarLogin(p.getUsername(), p.getPassword()));
-                    }
-                }
-                else if(pedido instanceof Pedido_Utilizadores){
-                    System.out.println("Pedido Utilizadores");
-                    Pedido_Utilizadores p = (Pedido_Utilizadores) pedido;
-                    p.setUtilizadores(servidor.utilizadoresOnline(p.getUsername()));
-                }
-
-                out.writeObject(pedido);
-                out.flush();
-
-            } catch (IOException e) {
-                try {
-                    System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
-                    cliente.close();
-                } catch (IOException ex) {
-                    System.out.println("Ocorreu um erro a fechar o socket:\n\t"+ex);
-                }
-            } catch (ClassNotFoundException e) {
-                Logger.getLogger(AtendeCliente.class.getName()).log(Level.SEVERE, null, e);
             }
         }
     }

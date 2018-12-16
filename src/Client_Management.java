@@ -4,12 +4,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class Client_Management {
+public class Client_Management extends java.util.Observable {
     
     protected String username;
     public static final int TIMEOUT = 10; //segundos
@@ -65,9 +64,22 @@ public class Client_Management {
     
     public void login(String username){
         this.username = username;
+        try {
+            socket = new Socket(InetAddress.getByName(IP), SERVER_PORT);
+            socket.setSoTimeout(TIMEOUT*1000);   
+//            out = new ObjectOutputStream(socket.getOutputStream());
+//            in = new ObjectInputStream(socket.getInputStream());
+        } catch (IOException e) {
+            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+        }
     }
     
     public void logout(){
+        try {
+            out.writeObject("logout");
+        } catch (IOException e) {
+            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+        }
         username = null;
     }
     
