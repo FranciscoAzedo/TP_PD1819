@@ -28,6 +28,7 @@ public class Servidor {
     public Servidor() {
         clientes = new HashMap<>();
         updates = new HashMap<>();
+        
         try {
             serverSocket = new ServerSocket(SERVICE_PORT);
         } catch (IOException e) {
@@ -35,6 +36,12 @@ public class Servidor {
         }
     }
    
+    public void lancaThreads(){
+        Thread t = new Check_Alive(this);
+        t.setDaemon(true);
+        t.start();
+    }
+    
     //funcao que recebe ligacoes tcp e lança threads para atender cientes
     public void receberClientes(){
         boolean igual;
@@ -44,7 +51,6 @@ public class Servidor {
                 Socket cliente = serverSocket.accept();
                 for(Socket s : clientes.keySet()){
                     if (s.getInetAddress().equals(cliente.getInetAddress())){
-                        //ObjectOutputStream objectOutputStream = new ObjectOutputStream(cliente.getOutputStream());
                         updates.put(cliente, clientes.get(s));
                         igual = true;
                     }
@@ -71,7 +77,10 @@ public class Servidor {
                 System.out.println("Ocorreu um erro a enviar atualização para " + updates.get(c));                
             }
         }
+        
     }
+    
+    
     
     //funcao verificar se nome utilizador ja existe
     public int verificarUsername(String username){
@@ -105,7 +114,7 @@ public class Servidor {
     
     public void efetuarLogout(Socket s){
         try {
-            String sql = "UPDATE Utilizadores SET Online = 0 WHERE Username = \"" + clientes.get(s) + "\"";
+            String sql = "UPDATE Utilizadores SET Online = 0, IP = NULL WHERE Username = \"" + clientes.get(s) + "\"";
             stmt.executeUpdate(sql);
             for (Iterator<Socket> it = updates.keySet().iterator(); it.hasNext();) {
                 Socket u = it.next();
@@ -113,6 +122,9 @@ public class Servidor {
                     it.remove();
             }
             atualizarClientes("Utilizadores");
+            Thread t = new Update_Clients_UDP(utilizadoresOutrosServidores(), "Utilizadores");
+            t.setDaemon(true);
+            t.start();
         } catch (SQLException e) {
             System.out.println(e);
         }
@@ -133,10 +145,14 @@ public class Servidor {
                     if (rs.getInt("Online") == 1)
                         return -4;
                     else{
-                        sql = "UPDATE Utilizadores SET Online = 1 WHERE Username = \"" + username + "\"";
+                        String ip = s.getInetAddress().toString().replace("/", "");
+                        sql = "UPDATE Utilizadores SET Online = 1, IP = \"" + ip + "\" WHERE Username = \"" + username + "\"";
                         stmt.executeUpdate(sql);
                         clientes.put(s, username);
                         atualizarClientes("Utilizadores");
+                        Thread t = new Update_Clients_UDP(utilizadoresOutrosServidores(), "Utilizadores");
+                        t.setDaemon(true);
+                        t.start();
                     }
                 }            
         } catch (SQLException se) {
@@ -162,6 +178,65 @@ public class Servidor {
         return utilizadores;
     }
     
+    public HashMap<String, String> utilizadoresOutrosServidores(){
+        HashMap<String, String> utilizadores = new HashMap<>();
+        try {
+            String sql = "SELECT * FROM Utilizadores WHERE Online = 1";
+            ResultSet rs = stmt.executeQuery(sql);
+            while(rs.next()){
+                //rs.getInt("Online") == 1 && 
+                if (!clientes.values().contains(rs.getString("Username")))
+                    utilizadores.put(rs.getString("IP"), rs.getString("Username")); 
+            }
+        } catch (SQLException se) {
+            System.out.println(se);
+        }
+        return utilizadores;
+    }
+    
+    public void desconectarUtilizador(String ip){
+     try {
+            String sql = "UPDATE Utilizadores SET Online = 0, IP = NULL, Falhas = 0 WHERE IP = \"" + ip + "\"";
+            stmt.executeUpdate(sql); 
+        } catch (SQLException e) {
+            System.out.println("Erro a desconectar cliente com ip:" + ip);
+        }   
+    }
+    
+    public int getFalhas(String ip){
+        int falhas = -1;
+        try {
+            String sql = "SELECT * FROM Utilizadores WHERE IP = \"" + ip + "\"";
+            ResultSet rs = stmt.executeQuery(sql);
+            if (rs.next())
+                falhas = rs.getInt("Falhas"); 
+        } catch (SQLException se) {
+            System.out.println(se);
+        }
+        return falhas;
+    }
+    
+    public void atualizarFalhas(String ip, int falhas){
+        try {
+            String sql = "UPDATE Utilizadores SET Falhas = " + falhas + " WHERE IP = \"" + ip + "\"";
+            stmt.executeUpdate(sql); 
+        } catch (SQLException e) {
+            System.out.println("Erro a alterar as falhas no ip:" + ip);
+        }
+    }
+    
+    public void anotarFalha(String ip){
+        System.out.println("Anotei falha no ip:" + ip);
+        int falhas = getFalhas(ip);
+        if (falhas < 3){
+            falhas ++;
+            atualizarFalhas(ip, falhas);
+        }
+        else{
+            desconectarUtilizador(ip);
+        }
+    }
+    
     public static void main(String[] args) {
  
         try{
@@ -172,7 +247,9 @@ public class Servidor {
             System.out.println("Creating statement...");
             stmt = conn.createStatement();
             
-            new Servidor().receberClientes();
+            Servidor server = new Servidor();
+            server.lancaThreads();
+            server.receberClientes();
             
         }catch(SQLException se){
             se.printStackTrace();

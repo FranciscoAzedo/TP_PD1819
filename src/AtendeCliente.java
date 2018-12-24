@@ -52,7 +52,6 @@ public class AtendeCliente extends Thread {
                     out.flush();
                 }
                 else if(pedido instanceof Pedido_Utilizadores){
-                    System.out.println("Pedido Utilizadores");
                     Pedido_Utilizadores p = (Pedido_Utilizadores) pedido;
                     p.setUtilizadores(servidor.utilizadoresOnline(p.getUsername()));
                     out.writeObject(pedido);

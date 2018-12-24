@@ -120,6 +120,7 @@ public class Cliente implements java.util.Observer{
     }
     
     public static void preencherDados(int operacao){
+        
         String user, password;
         System.out.print("Username: ");
         user = sc.next();

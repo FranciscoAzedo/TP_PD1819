@@ -13,7 +13,8 @@ public class Client_Management extends java.util.Observable {
     protected String username;
     public static final int TIMEOUT = 10; //segundos
     public static final int SERVER_PORT = 5001;
-    public static final String IP = "localhost";
+    public static final int UPDATE_PORT = 5001;
+    public static final String IP = "192.168.1.74";
     protected static Socket socket;
     protected static ObjectInputStream in = null;
     protected static ObjectOutputStream out = null;
@@ -65,8 +66,11 @@ public class Client_Management extends java.util.Observable {
     public void login(String username){
         this.username = username;
         try {
-            socket = new Socket(InetAddress.getByName(IP), SERVER_PORT);
+            socket = new Socket(InetAddress.getByName(IP), UPDATE_PORT);
             Thread t = new Client_Update_Management(socket, this);
+            t.setDaemon(true);
+            t.start();
+            t = new Client_Management_UDP(IP, this);
             t.setDaemon(true);
             t.start();
         } catch (IOException e) {
