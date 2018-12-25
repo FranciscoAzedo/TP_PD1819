@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 
 public class Check_Alive extends Thread {
     
-    public static final int SERVER_PORT = 5001;
+    public static final int UDP_PORT = 6002;
     public static final int MAX_SIZE = 10000;
     
     private DatagramSocket socket;
@@ -32,7 +32,7 @@ public class Check_Alive extends Thread {
     
     public void run(){
         while(true){
-            String resposta, ip;
+            String resposta, ip = null;
             try {
                 utilizadores.clear();
                 utilizadores = server.utilizadoresOutrosServidores();
@@ -46,7 +46,7 @@ public class Check_Alive extends Thread {
                         out = new ObjectOutputStream(bOut);
                         out.writeObject("Ativo");
                         out.flush();
-                        packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(ip), SERVER_PORT);
+                        packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(ip), UDP_PORT);
                         socket.send(packet);
                         packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
                         socket.receive(packet);
@@ -57,11 +57,11 @@ public class Check_Alive extends Thread {
 //                    } catch (TimeoutException ex) {
 //                        Logger.getLogger(Check_Alive.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (SocketException ex) {
-                        Logger.getLogger(Check_Alive.class.getName()).log(Level.SEVERE, null, ex);
+                        System.out.println("Erro thread check alive para o ip:" + ip);
                     } catch (IOException ex) {
-                        Logger.getLogger(Check_Alive.class.getName()).log(Level.SEVERE, null, ex);
+                        System.out.println("Erro thread check alive para o ip:" + ip);
                     } catch (ClassNotFoundException ex) {
-                        Logger.getLogger(Check_Alive.class.getName()).log(Level.SEVERE, null, ex);
+                        System.out.println("Erro thread check alive para o ip:" + ip);
                     }
                 }
                 sleep(5000);

@@ -23,14 +23,14 @@ public class Servidor {
     
     protected ServerSocket serverSocket;
     
-    public static final int SERVICE_PORT = 5001;
+    public static final int TCP_PORT = 5001;
 
     public Servidor() {
         clientes = new HashMap<>();
         updates = new HashMap<>();
         
         try {
-            serverSocket = new ServerSocket(SERVICE_PORT);
+            serverSocket = new ServerSocket(TCP_PORT);
         } catch (IOException e) {
             System.out.println("Ocorreu um erro a iniciar o servidor:\n\t"+e);
         }
@@ -61,7 +61,7 @@ public class Servidor {
                     t.start();
                 }
             } catch (IOException e) {
-                System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+                System.out.println("Erro receber cleintes servidor");
             }
         }
     }
@@ -74,7 +74,7 @@ public class Servidor {
                 out.writeObject(tipo);
                 out.flush();
             } catch (IOException e) {
-                System.out.println("Ocorreu um erro a enviar atualização para " + updates.get(c));                
+                System.out.println("Ocorreu um erro atualizar clientes servidor: Falha a enviar atualização para " + updates.get(c));                
             }
         }
         
@@ -94,7 +94,7 @@ public class Servidor {
                     return -1;
             }            
         } catch (SQLException se) {
-            System.out.println(se);
+                System.out.println("Erro verificar username servidor");
             return -2;
         }
         return 1;
@@ -106,7 +106,7 @@ public class Servidor {
             String sql = "INSERT INTO Utilizadores (Username, Password) VALUES (\"" + username + "\", \"" + password + "\");";
             stmt.executeUpdate(sql);          
         } catch (SQLException se) {
-            System.out.println(se);
+                System.out.println("Erro registar user servidor");
             return -2;
         }
         return 1;
@@ -122,11 +122,11 @@ public class Servidor {
                     it.remove();
             }
             atualizarClientes("Utilizadores");
-            Thread t = new Update_Clients_UDP(utilizadoresOutrosServidores(), "Utilizadores");
+            Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
             t.setDaemon(true);
             t.start();
         } catch (SQLException e) {
-            System.out.println(e);
+                System.out.println("Erro efetuar logout servidor");
         }
         clientes.remove(s);
     }
@@ -150,13 +150,13 @@ public class Servidor {
                         stmt.executeUpdate(sql);
                         clientes.put(s, username);
                         atualizarClientes("Utilizadores");
-                        Thread t = new Update_Clients_UDP(utilizadoresOutrosServidores(), "Utilizadores");
+                        Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
                         t.setDaemon(true);
                         t.start();
                     }
                 }            
         } catch (SQLException se) {
-            System.out.println(se);
+                System.out.println("Erro efetuar login servidor");
             return -2;
         }
         return 1;
@@ -173,7 +173,7 @@ public class Servidor {
                     utilizadores.add(rs.getString("Username")); 
             }
         } catch (SQLException se) {
-            System.out.println(se);
+                System.out.println("Erro utilizadores online servidor");
         }
         return utilizadores;
     }
@@ -189,7 +189,7 @@ public class Servidor {
                     utilizadores.put(rs.getString("IP"), rs.getString("Username")); 
             }
         } catch (SQLException se) {
-            System.out.println(se);
+                System.out.println("Erro utilizadores outros servidores servidor");
         }
         return utilizadores;
     }
@@ -199,7 +199,7 @@ public class Servidor {
             String sql = "UPDATE Utilizadores SET Online = 0, IP = NULL, Falhas = 0 WHERE IP = \"" + ip + "\"";
             stmt.executeUpdate(sql); 
         } catch (SQLException e) {
-            System.out.println("Erro a desconectar cliente com ip:" + ip);
+                System.out.println("Erro desconectar utilizador servidor");
         }   
     }
     
@@ -211,7 +211,7 @@ public class Servidor {
             if (rs.next())
                 falhas = rs.getInt("Falhas"); 
         } catch (SQLException se) {
-            System.out.println(se);
+                System.out.println("Erro get falhas servidor");
         }
         return falhas;
     }
@@ -221,7 +221,7 @@ public class Servidor {
             String sql = "UPDATE Utilizadores SET Falhas = " + falhas + " WHERE IP = \"" + ip + "\"";
             stmt.executeUpdate(sql); 
         } catch (SQLException e) {
-            System.out.println("Erro a alterar as falhas no ip:" + ip);
+                System.out.println("Erro atualizar falhas servidor");
         }
     }
     
@@ -252,7 +252,7 @@ public class Servidor {
             server.receberClientes();
             
         }catch(SQLException se){
-            se.printStackTrace();
+                System.out.println("Erro main servidor");
         }
         finally{
             try{

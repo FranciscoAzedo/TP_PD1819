@@ -3,9 +3,9 @@ import java.io.Serializable;
 
 public class Pedido_Registo implements Serializable {
     
-    private String username;
-    private String password;
-    private String tipo;
+    private final String username;
+    private final String password;
+    private final String tipo;
     private int aprovado = 0; 
     
     public Pedido_Registo(String user, String pass, String tipo) {

@@ -5,13 +5,13 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Client_Update_Management extends Thread {
+public class Client_Update_TCP extends Thread {
     
     private Socket server;
     private Client_Management CM;
     private ObjectInputStream oin;
     
-    public Client_Update_Management(Socket s, Client_Management cm){
+    public Client_Update_TCP(Socket s, Client_Management cm){
             server = s;
             CM = cm;
     }
@@ -25,7 +25,7 @@ public class Client_Update_Management extends Thread {
                     CM.update((String) update);
             } catch (IOException e) {
                 try {
-                    System.out.println("Ocorreu um erro a ler atualizações do socket");
+                    System.out.println("Erro thread Client Update TCP"); 
                     server.close();
                 } catch (IOException ex) {
                 }

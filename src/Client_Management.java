@@ -12,8 +12,8 @@ public class Client_Management extends java.util.Observable {
     
     protected String username;
     public static final int TIMEOUT = 10; //segundos
-    public static final int SERVER_PORT = 5001;
-    public static final int UPDATE_PORT = 5001;
+    public static final int TCP_PORT = 5001;
+    public static final int UDP_PORT = 6001;
     public static final String IP = "192.168.1.74";
     protected static Socket socket;
     protected static ObjectInputStream in = null;
@@ -22,12 +22,12 @@ public class Client_Management extends java.util.Observable {
     public Client_Management() {
         
         try {
-            socket = new Socket(InetAddress.getByName(IP), SERVER_PORT);
+            socket = new Socket(InetAddress.getByName(IP), TCP_PORT);
             socket.setSoTimeout(TIMEOUT*1000);   
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
         } catch (IOException e) {
-            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            System.out.println("Erro contrutor Client Management");
         }
     }
     
@@ -38,7 +38,7 @@ public class Client_Management extends java.util.Observable {
             p = (Pedido_Registo) in.readObject();
             return p;
         } catch (IOException e) {
-            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            System.out.println("Erro preencher dados Client Management");
             return null;
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
@@ -55,7 +55,7 @@ public class Client_Management extends java.util.Observable {
             p =  (Pedido_Utilizadores) in.readObject();
             return p;
         } catch (IOException e) {
-            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            System.out.println("Erro get utilizadores Client Management");
             return null;
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Cliente.class.getName()).log(Level.SEVERE, null, ex);
@@ -66,15 +66,15 @@ public class Client_Management extends java.util.Observable {
     public void login(String username){
         this.username = username;
         try {
-            socket = new Socket(InetAddress.getByName(IP), UPDATE_PORT);
-            Thread t = new Client_Update_Management(socket, this);
+            socket = new Socket(InetAddress.getByName(IP), TCP_PORT);
+            Thread t = new Client_Update_TCP(socket, this);
             t.setDaemon(true);
             t.start();
-            t = new Client_Management_UDP(IP, this);
+            t = new Client_Update_UDP(IP, this);
             t.setDaemon(true);
             t.start();
         } catch (IOException e) {
-            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            System.out.println("Erro login Client Management:" + e);
         }
     }
     
@@ -82,7 +82,7 @@ public class Client_Management extends java.util.Observable {
         try {
             out.writeObject("logout");
         } catch (IOException e) {
-            System.out.println("Ocorreu um erro no acesso ao socket:\n\t"+e);
+            System.out.println("Erro logout Client Management");
         }
         username = null;
     }
