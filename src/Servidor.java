@@ -1,12 +1,20 @@
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Servidor {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
@@ -24,6 +32,7 @@ public class Servidor {
     protected ServerSocket serverSocket;
     
     public static final int TCP_PORT = 5001;
+    public static final int UDP_PORT = 6001;
 
     public Servidor() {
         clientes = new HashMap<>();
@@ -79,8 +88,6 @@ public class Servidor {
         }
         
     }
-    
-    
     
     //funcao verificar se nome utilizador ja existe
     public int verificarUsername(String username){
@@ -162,6 +169,103 @@ public class Servidor {
         return 1;
     }
 
+    public ArrayList<Mensagem> getMensagens(String user_1, String user_2){
+        ArrayList<Mensagem> mensagens = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM Mensagens "
+                    + "WHERE (origem = \"" + user_1 + "\" AND detino = \"" + user_2 + "\")"
+                    + "OR (origem = \"" + user_2 + "\" AND detino = \"" + user_1 + "\")";
+            ResultSet rs = stmt.executeQuery(sql);
+            while(rs.next()){
+                mensagens.add(new Mensagem(rs.getString("origem"), rs.getString("destino"), rs.getString("mensagem"), rs.getDate("data")));
+            }
+        } catch (SQLException se) {
+                System.out.println("Erro get mensagens servidor");
+        }
+        return mensagens;
+    }
+    
+    public String getIP(String username){
+        try {
+            String sql = "SELECT * FROM Utilizadores WHERE Username = \"" + username + "\"";
+            ResultSet rs = stmt.executeQuery(sql);
+            if (!rs.next())
+                return null;
+            else{
+                if(rs.getInt("Online") == 0)
+                    return null;
+                else{
+                    String ip = rs.getString("IP");
+                    ip = ip.replace("/", "");
+                    return ip;
+                }
+            }                
+        } catch (SQLException se) {
+            System.out.println("Erro efetuar login servidor");
+            return null;
+        }
+    }
+    
+    public int escreverMensagem(Mensagem msg){
+        if(registarMensagem(msg) == 0)
+            return -1; //Erro na BD
+        else{
+            if(updates.values().contains(msg.getUser_destino())){
+                for(Map.Entry<Socket, String> entry : updates.entrySet()) {
+                    if(entry.getValue().equals(msg.getUser_destino())){
+                        try{
+                            Socket s = entry.getKey();
+                            ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
+                            out.writeObject(msg);
+                            out.flush();
+                        } catch (IOException e) {
+                            System.out.println("Erro a enviar mensagem TCP servidor");
+                            return -2; //Erro socket
+                        }
+                        break;
+                    }
+                }   
+            }
+            else{
+                String ip;
+                if((ip = getIP(msg.getUser_destino())) != null){
+                    try{
+                        DatagramSocket socket = new DatagramSocket();
+                        socket.setSoTimeout (5 * 1000);
+                        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+                        ObjectOutputStream out = new ObjectOutputStream(bOut);
+                        out.writeObject(msg);
+                        out.flush();
+                        DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(ip), UDP_PORT);
+                        socket.send(packet);
+                    } catch (SocketException ex) {
+                        System.out.println("Erro a enviar mensagem UDP servidor");
+                        return -2; //Erro socket
+                    } catch (IOException ex) {
+                        System.out.println("Erro a enviar mensagem UDP servidor");
+                        return -2; //Erro socket
+                    }
+                }
+                else
+                    return -3; //user desconectado
+            }
+        }
+        return 1;
+    }
+    
+    public int registarMensagem(Mensagem msg){
+        try {
+            String sql = "INSERT INTO Mensagens (Origem, Mensagem, Destino, Data) VALUES (\"" + msg.getUser_origem() + "\", \"" + msg.getMensagem() + "\", \"" + msg.getUser_destino() + "\", " + msg.getData() + ");";
+            System.out.println(sql);
+            stmt.executeUpdate(sql);          
+        } catch (SQLException se) {
+                System.out.println("Erro escrever mensagem servidor");
+            return 0;
+        }
+        return 1;
+    }
+    
+    
     //funcao para retornar utilizadores online
     public ArrayList<String> utilizadoresOnline(String username){
         ArrayList<String> utilizadores = new ArrayList<>();

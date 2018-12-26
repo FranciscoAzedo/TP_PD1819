@@ -34,7 +34,7 @@ public class Client_Update_UDP extends Thread{
     }
 
     public void run() {
-        String pedido;
+        Object pedido;
         if(socket == null)
             return;
         while(true){
@@ -42,19 +42,24 @@ public class Client_Update_UDP extends Thread{
                 packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
                 socket.receive(packet);
                 in = new ObjectInputStream(new ByteArrayInputStream(packet.getData()));
-                pedido = (String)in.readObject();
+                pedido = in.readObject();
                 if(pedido != null){
-                    if (pedido.equalsIgnoreCase("Ativo")){
-                        bOut = new ByteArrayOutputStream(MAX_SIZE);
-                        out = new ObjectOutputStream(bOut);
-                        out.writeObject("Ativo");
-                        out.flush();
-                        packet.setData(bOut.toByteArray());
-                        packet.setLength(bOut.size());
-                        socket.send(packet);
+                    if(pedido instanceof String){
+                        String p = (String) pedido;
+                        if (p.equalsIgnoreCase("Ativo")){
+                            bOut = new ByteArrayOutputStream(MAX_SIZE);
+                            out = new ObjectOutputStream(bOut);
+                            out.writeObject("Ativo");
+                            out.flush();
+                            packet.setData(bOut.toByteArray());
+                            packet.setLength(bOut.size());
+                            socket.send(packet);
+                        }
+                        else
+                            CM.update(p);
                     }
-                    else
-                        CM.update(pedido);
+                    else if(pedido instanceof Mensagem)
+                        CM.update("Mensagem");
                 }
                 else
                     continue;

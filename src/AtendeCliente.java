@@ -57,6 +57,18 @@ public class AtendeCliente extends Thread {
                     out.writeObject(pedido);
                     out.flush();
                 }
+                else if(pedido instanceof Pedido_Obter_Mensagens){
+                    Pedido_Obter_Mensagens p = (Pedido_Obter_Mensagens) pedido;
+                    p.setMensagens(servidor.getMensagens(p.getUser_1(), p.getUser_2()));
+                    out.writeObject(pedido);
+                    out.flush();
+                }
+                else if(pedido instanceof Pedido_Escrever_Mensagem){
+                    Pedido_Escrever_Mensagem p = (Pedido_Escrever_Mensagem) pedido;
+                    p.setAprovado(servidor.escreverMensagem(p.getMsg()));
+                    out.writeObject(pedido);
+                    out.flush();
+                }
                 else if(pedido instanceof String){
                     if (pedido.equals("logout")){
                         servidor.efetuarLogout(cliente);

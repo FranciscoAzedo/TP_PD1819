@@ -13,7 +13,7 @@ public class Client_Management extends java.util.Observable {
     protected String username;
     public static final int TIMEOUT = 10; //segundos
     public static final int TCP_PORT = 5001;
-    public static final int UDP_PORT = 6001;
+    public static final int UDP_PORT = 6002;
     public static final String IP = "192.168.1.74";
     protected static Socket socket;
     protected static ObjectInputStream in = null;
@@ -59,6 +59,37 @@ public class Client_Management extends java.util.Observable {
             return null;
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Cliente.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
+    
+    public Pedido_Obter_Mensagens getMensagens(String user){
+        try {
+            Pedido_Obter_Mensagens p = new Pedido_Obter_Mensagens(username, user);
+            out.writeObject(p);
+            out.flush();
+            p =  (Pedido_Obter_Mensagens) in.readObject();
+            return p;
+        } catch (IOException e) {
+            System.out.println("Erro get mensagens Client Management");
+            return null;
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(Cliente.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
+    
+    public Pedido_Escrever_Mensagem escreverMensagem(Pedido_Escrever_Mensagem p){
+        try{
+            out.writeObject(p);
+            out.flush();
+            p = (Pedido_Escrever_Mensagem) in.readObject();
+            return p;
+        } catch (IOException e) {
+            System.out.println("Erro escrever mensagem Client Management");
+            return null;
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
             return null;
         }
     }

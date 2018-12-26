@@ -1,5 +1,6 @@
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Observable;
 import java.util.Scanner;
 
@@ -8,8 +9,38 @@ public class Cliente implements java.util.Observer{
     protected static Scanner sc = null;
     protected static Client_Management CM = null;
     protected static ArrayList<String> utilizadores = null;
+    protected static ArrayList<Mensagem> mensagens = null;
     protected static boolean menu = false;
     protected static boolean menuListUsers = false;
+    protected static boolean menuMensagemUser = false;
+    protected static String User = null;
+    protected static String User_MSG = null;
+    
+    
+    public static void menuMensagensUtilizador(String username){
+        String s;
+        Pedido_Obter_Mensagens p = CM.getMensagens(username);
+        if(p != null){
+            mensagens = p.getMensagens();
+            System.out.println("\n\t" + username.toUpperCase() + "\n");
+            for(int j = 0; j < mensagens.size(); j++){
+                   System.out.println(mensagens.get(j).getUser_origem() + ": " + mensagens.get(j).getMensagem());
+               }
+            System.out.println("\n(0 - voltar)");
+            System.out.print(">> ");
+            s = sc.next();
+            if(s.equals("0"))
+                menuUtilizador(username);
+            else{
+                Pedido_Escrever_Mensagem pedido = new Pedido_Escrever_Mensagem(new Mensagem(User, username, s, Calendar.getInstance().getTime()));
+                CM.escreverMensagem(pedido);
+                
+            }
+        }
+        else{
+            menuPrincipal();
+        }
+    }
     
     public static void menuUtilizador(String username){
         int i;
@@ -24,6 +55,19 @@ public class Cliente implements java.util.Observer{
                 System.out.println("\nOpção inválida\n");
             }
         } while(i < 0 || i > 2);
+        
+        switch(i){
+            case 0:
+                menuListaUtilizadores();
+                break;
+            case 1:
+                break;
+            case 2:
+                User_MSG = username;
+                menuMensagensUtilizador(username);
+                break;
+        }
+        
     }
     
     public static void atualizaUtilizadores(){
@@ -38,6 +82,15 @@ public class Cliente implements java.util.Observer{
         }
         System.out.println("0 - Anterior");
         System.out.print("\n>> ");
+    }
+    
+    public static void atualizarMensagens(){
+        System.out.println("\n\t" + User_MSG.toUpperCase() + "\n");
+            for(int j = 0; j < mensagens.size(); j++){
+                   System.out.println(mensagens.get(j).getUser_origem() + ": " + mensagens.get(j).getMensagem());
+               }
+            System.out.println("\n(0 - voltar)");
+            System.out.print(">> ");
     }
     
     public static void menuListaUtilizadores(){
@@ -210,8 +263,11 @@ public class Cliente implements java.util.Observer{
                     atualizaUtilizadores();                    
                 }
                 
-            }else if(((String) arg).equalsIgnoreCase("Utilizadores")){
-                
+            }else if(((String) arg).equalsIgnoreCase("Mensagem")){
+                if(menuMensagemUser){
+                    mensagens = CM.getMensagens(User_MSG).getMensagens();
+                    atualizarMensagens();
+                }                
             }else if(((String) arg).equalsIgnoreCase("Utilizadores")){
                 
             }else{

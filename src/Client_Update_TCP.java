@@ -23,6 +23,8 @@ public class Client_Update_TCP extends Thread {
                 Object update = oin.readObject();
                 if (update instanceof String)
                     CM.update((String) update);
+                else if(update instanceof Mensagem)
+                    CM.update("Mensagem");
             } catch (IOException e) {
                 try {
                     System.out.println("Erro thread Client Update TCP"); 

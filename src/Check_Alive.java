@@ -40,7 +40,7 @@ public class Check_Alive extends Thread {
                 while (it.hasNext()) {
                     try{
                         ip = (String) it.next();
-                        DatagramSocket socket = new DatagramSocket();
+                        socket = new DatagramSocket();
                         socket.setSoTimeout (5 * 1000);
                         bOut = new ByteArrayOutputStream();
                         out = new ObjectOutputStream(bOut);
