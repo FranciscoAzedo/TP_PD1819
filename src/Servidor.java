@@ -307,6 +307,20 @@ public class Servidor {
         }   
     }
     
+     ArrayList<String> getFicheiros(String username) {
+        ArrayList<String> ficheiros = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM Ficheiros WHERE Dono = \"" + username + "\"";
+            ResultSet rs = stmt.executeQuery(sql);
+            while(rs.next()){
+                ficheiros.add(rs.getString("Nome"));
+            }
+        } catch (SQLException se) {
+                System.out.println("Erro get ficheiros servidor");
+        }
+        return ficheiros;
+    }
+    
     public int getFalhas(String ip){
         int falhas = -1;
         try {

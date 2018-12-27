@@ -69,6 +69,13 @@ public class AtendeCliente extends Thread {
                     out.writeObject(pedido);
                     out.flush();
                 }
+                else if(pedido instanceof Pedido_Obter_Ficheiros){
+                    Pedido_Obter_Ficheiros p = (Pedido_Obter_Ficheiros) pedido;
+                    p.setFicheiros(servidor.getFicheiros(p.getUsername()));
+                    p.setIp(servidor.getIP(p.getUsername()));
+                    out.writeObject(pedido);
+                    out.flush();
+                }
                 else if(pedido instanceof String){
                     if (pedido.equals("logout")){
                         servidor.efetuarLogout(cliente);

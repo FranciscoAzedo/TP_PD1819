@@ -42,6 +42,27 @@ public class Cliente implements java.util.Observer{
         }
     }
     
+    public static void MenuListaFicheiros(){
+        int i;
+        Pedido_Obter_Ficheiros p = CM.getFicheiros(User_MSG);
+        do{
+            System.out.println("\n\t" + User_MSG.toUpperCase() + "\n");
+            for(int j = 0; j < p.ficheiros.size(); j++){
+                System.out.println(j+1 + " - " + p.ficheiros.get(j));
+            }
+            System.out.println("0 - Anterior");
+            System.out.print("\n>> ");
+            i = sc.nextInt();
+            if (i < 0 || i > 2){
+                System.out.println("\nOpção inválida\n");
+            }
+        } while(i < 0 || i > 2);
+        
+        if(i>0){
+            CM.TransferirFicheiros(p.ficheiros.get(i), p.getIp());
+        }
+    }
+    
     public static void menuUtilizador(String username){
         int i;
         do{
@@ -61,6 +82,7 @@ public class Cliente implements java.util.Observer{
                 menuListaUtilizadores();
                 break;
             case 1:
+                MenuListaFicheiros();
                 break;
             case 2:
                 User_MSG = username;

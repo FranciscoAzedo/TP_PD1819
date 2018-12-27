@@ -1,9 +1,14 @@
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,12 +17,20 @@ public class Client_Management extends java.util.Observable {
     
     protected String username;
     public static final int TIMEOUT = 10; //segundos
-    public static final int TCP_PORT = 5001;
-    public static final int UDP_PORT = 6002;
     public static final String IP = "192.168.1.74";
+    public static final int TCP_PORT = 5001;
+    public static final int UDP_PORT = 6002; 
     protected static Socket socket;
     protected static ObjectInputStream in = null;
     protected static ObjectOutputStream out = null;
+    protected static ServerSocket serverSocket;
+    public static final int TRANSFER_PORT = 4002;
+    public static byte[] file = new byte[4000];
+    public static InputStream input;
+    public static int nbytes;
+    public static FileOutputStream localFileOutputStream = null;
+    public static String localFilePath = null;
+    public static File localDirectory;
 
     public Client_Management() {
         
@@ -94,6 +107,56 @@ public class Client_Management extends java.util.Observable {
         }
     }
     
+    public Pedido_Obter_Ficheiros getFicheiros(String username){
+        Pedido_Obter_Ficheiros p = new Pedido_Obter_Ficheiros(username);
+        try{
+            out.writeObject(p);
+            out.flush();
+            p = (Pedido_Obter_Ficheiros) in.readObject();
+            return p;
+        } catch (IOException e) {
+            System.out.println("Erro obter ficheiros Client Management");
+            return null;
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
+     
+    public void TransferirFicheiros(String ficheiro, String ip){
+        try {
+            Socket s = new Socket(InetAddress.getByName(ip), TRANSFER_PORT);
+            ObjectOutputStream o = new ObjectOutputStream(s.getOutputStream());
+            o.writeObject(ficheiro);
+            o.flush();
+            
+            if(!localDirectory.exists()){
+            System.out.println("A directoria " + localDirectory + " nao existe!");
+            return;
+        }
+        
+        if(!localDirectory.isDirectory()){
+            System.out.println("O caminho " + localDirectory + " nao se refere a uma directoria!");
+            return;
+        }
+        
+        if(!localDirectory.canWrite()){
+            System.out.println("Sem permissoes de escrita na directoria " + localDirectory);
+            return;
+        }
+                    
+            localFilePath = localDirectory.getCanonicalPath()+File.separator+ficheiro;
+            localFileOutputStream = new FileOutputStream(localFilePath);
+             while((nbytes = input.read(file)) > 0)
+                    localFileOutputStream.write(file,0,nbytes);
+             
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+        
     public void login(String username){
         this.username = username;
         try {
@@ -102,6 +165,15 @@ public class Client_Management extends java.util.Observable {
             t.setDaemon(true);
             t.start();
             t = new Client_Update_UDP(IP, this);
+            t.setDaemon(true);
+            t.start();
+            t = new Thread(
+                new Runnable(){
+                    public void run(){
+                        ThreadPedidosFicheiro();
+                    }
+                }
+            );
             t.setDaemon(true);
             t.start();
         } catch (IOException e) {
@@ -121,6 +193,23 @@ public class Client_Management extends java.util.Observable {
     public void update(String update){
         setChanged();
         notifyObservers(update);    
+    }
+    
+    public void ThreadPedidosFicheiro(){
+        try {
+            serverSocket = new ServerSocket(TRANSFER_PORT);
+            while(!serverSocket.isClosed()){
+                try{
+                    Thread t = new atendePedidoFicheiro(serverSocket.accept());
+                    t.setDaemon(true);
+                    t.start();
+                } catch (IOException ex) {
+                    Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
 }
