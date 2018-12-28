@@ -1,6 +1,9 @@
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Observable;
 import java.util.Scanner;
 
@@ -32,7 +35,8 @@ public class Cliente implements java.util.Observer{
             if(s.equals("0"))
                 menuUtilizador(username);
             else{
-                Pedido_Escrever_Mensagem pedido = new Pedido_Escrever_Mensagem(new Mensagem(User, username, s, Calendar.getInstance().getTime()));
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Pedido_Escrever_Mensagem pedido = new Pedido_Escrever_Mensagem(new Mensagem(User, username, s, sdf.format(Calendar.getInstance().getTime())));
                 CM.escreverMensagem(pedido);
                 
             }
@@ -222,6 +226,7 @@ public class Cliente implements java.util.Observer{
                     else{
                         System.out.println("\nLogin efetuado com sucesso!\n");
                         CM.login(user);
+                        User = user;
                         menu = true;
                     }
                     break;

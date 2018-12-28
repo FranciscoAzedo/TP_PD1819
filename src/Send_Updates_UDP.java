@@ -11,7 +11,7 @@ import java.util.Iterator;
 
 public class Send_Updates_UDP extends Thread{
     
-    public static final int UDP_PORT = 6002;
+    public static final int UDP_PORT = 6001;
     
     private DatagramSocket socket;
     private DatagramPacket packet;

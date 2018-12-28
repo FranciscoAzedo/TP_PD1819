@@ -19,7 +19,7 @@ public class Client_Management extends java.util.Observable {
     public static final int TIMEOUT = 10; //segundos
     public static final String IP = "192.168.1.74";
     public static final int TCP_PORT = 5001;
-    public static final int UDP_PORT = 6002; 
+    public static final int UDP_PORT = 6001; 
     protected static Socket socket;
     protected static ObjectInputStream in = null;
     protected static ObjectOutputStream out = null;
@@ -99,7 +99,7 @@ public class Client_Management extends java.util.Observable {
             p = (Pedido_Escrever_Mensagem) in.readObject();
             return p;
         } catch (IOException e) {
-            System.out.println("Erro escrever mensagem Client Management");
+            System.out.println("Erro escrever mensagem Client Management : " + e);
             return null;
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);

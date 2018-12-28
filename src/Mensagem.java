@@ -1,20 +1,22 @@
 
+import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Date;
 
-public class Mensagem {
+public class Mensagem implements Serializable{
     private final String user_origem;
     private final String user_destino;
     private final String mensagem;
-    private final Date data ;
+    private final String data ;
 
-    public Mensagem(String user_origem, String user_destino, String mensagem, Date data) {
+    public Mensagem(String user_origem, String user_destino, String mensagem, String data) {
         this.user_origem = user_origem;
         this.user_destino = user_destino;
         this.mensagem = mensagem;
         this.data = data;
     }
 
-    public Date getData() {
+    public String getData() {
         return data;
     }
     

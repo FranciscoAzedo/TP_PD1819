@@ -173,14 +173,14 @@ public class Servidor {
         ArrayList<Mensagem> mensagens = new ArrayList<>();
         try {
             String sql = "SELECT * FROM Mensagens "
-                    + "WHERE (origem = \"" + user_1 + "\" AND detino = \"" + user_2 + "\")"
-                    + "OR (origem = \"" + user_2 + "\" AND detino = \"" + user_1 + "\")";
+                    + "WHERE (origem = \"" + user_1 + "\" AND destino = \"" + user_2 + "\")"
+                    + "OR (origem = \"" + user_2 + "\" AND destino = \"" + user_1 + "\")";
             ResultSet rs = stmt.executeQuery(sql);
             while(rs.next()){
-                mensagens.add(new Mensagem(rs.getString("origem"), rs.getString("destino"), rs.getString("mensagem"), rs.getDate("data")));
+                mensagens.add(new Mensagem(rs.getString("origem"), rs.getString("destino"), rs.getString("mensagem"), rs.getString("data")));
             }
         } catch (SQLException se) {
-                System.out.println("Erro get mensagens servidor");
+                System.out.println("Erro get mensagens servidor : " + se);
         }
         return mensagens;
     }
@@ -255,11 +255,11 @@ public class Servidor {
     
     public int registarMensagem(Mensagem msg){
         try {
-            String sql = "INSERT INTO Mensagens (Origem, Mensagem, Destino, Data) VALUES (\"" + msg.getUser_origem() + "\", \"" + msg.getMensagem() + "\", \"" + msg.getUser_destino() + "\", " + msg.getData() + ");";
+            String sql = "INSERT INTO Mensagens (Origem, Mensagem, Destino, Data) VALUES (\"" + msg.getUser_origem() + "\", \"" + msg.getMensagem() + "\", \"" + msg.getUser_destino() + "\", \"" + msg.getData() + "\");";
             System.out.println(sql);
             stmt.executeUpdate(sql);          
         } catch (SQLException se) {
-                System.out.println("Erro escrever mensagem servidor");
+                System.out.println("Erro escrever mensagem servidor: " + se);
             return 0;
         }
         return 1;
@@ -301,7 +301,11 @@ public class Servidor {
     public void desconectarUtilizador(String ip){
      try {
             String sql = "UPDATE Utilizadores SET Online = 0, IP = NULL, Falhas = 0 WHERE IP = \"" + ip + "\"";
-            stmt.executeUpdate(sql); 
+            stmt.executeUpdate(sql);
+            atualizarClientes("Utilizadores");
+            Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
+            t.setDaemon(true);
+            t.start();
         } catch (SQLException e) {
                 System.out.println("Erro desconectar utilizador servidor");
         }   

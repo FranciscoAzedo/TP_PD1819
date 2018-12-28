@@ -10,12 +10,10 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Check_Alive extends Thread {
     
-    public static final int UDP_PORT = 6002;
+    public static final int UDP_PORT = 6001;
     public static final int MAX_SIZE = 10000;
     
     private DatagramSocket socket;
@@ -57,10 +55,13 @@ public class Check_Alive extends Thread {
 //                    } catch (TimeoutException ex) {
 //                        Logger.getLogger(Check_Alive.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (SocketException ex) {
+                        server.anotarFalha(ip);
                         System.out.println("Erro thread check alive para o ip:" + ip);
                     } catch (IOException ex) {
+                        server.anotarFalha(ip);
                         System.out.println("Erro thread check alive para o ip:" + ip);
                     } catch (ClassNotFoundException ex) {
+                        server.anotarFalha(ip);
                         System.out.println("Erro thread check alive para o ip:" + ip);
                     }
                 }
