@@ -1,5 +1,6 @@
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
@@ -13,8 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Servidor {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
@@ -139,7 +138,7 @@ public class Servidor {
     }
     
     //funcao para efetuar login
-    public int efetuarLogin(String username, String password, Socket s){
+    public int efetuarLogin(String username, String password, Socket s, String Path){
         try {
             String sql = "SELECT * FROM Utilizadores WHERE Username = \"" + username + "\"";
             ResultSet rs = stmt.executeQuery(sql);
@@ -153,8 +152,9 @@ public class Servidor {
                         return -4;
                     else{
                         String ip = s.getInetAddress().toString().replace("/", "");
-                        sql = "UPDATE Utilizadores SET Online = 1, IP = \"" + ip + "\" WHERE Username = \"" + username + "\"";
+                        sql = "UPDATE Utilizadores SET Online = 1, IP = \"" + ip + "\", Path = \"" + Path + "\" WHERE Username = \"" + username + "\"";
                         stmt.executeUpdate(sql);
+                        registarFicheiros(username, Path);
                         clientes.put(s, username);
                         atualizarClientes("Utilizadores");
                         Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
@@ -167,6 +167,26 @@ public class Servidor {
             return -2;
         }
         return 1;
+    }
+    
+    public void registarFicheiros(String username, String Path){
+        try{
+            String sql = "DELETE FROM Ficheiros WHERE USername = \"" + username + "\"";
+            stmt.executeUpdate(sql);        
+            File folder = new File(Path);
+            File[] listOfFiles = folder.listFiles();
+            for (File file : listOfFiles) {
+                if (file.isFile()) {
+                    if(file.length() / 1024 + 1 < 1024)
+                        sql = "INSERT INTO Ficheiros (Username, Nome, Tamanho) VALUES (\"" + username + "\", \"" + file.getName() + "\", \"" + (file.length() / 1024 + 1) + " KB" + "\")";
+                    else
+                        sql = "INSERT INTO Ficheiros (Username, Nome, Tamanho) VALUES (\"" + username + "\", \"" + file.getName() + "\", \"" + ((file.length() / 1024 + 1) / 1024 + 1) + " MB" + "\")";
+                    stmt.executeUpdate(sql);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Erro registar ficheiros servidor:" + ex);
+        }
     }
 
     public ArrayList<Mensagem> getMensagens(String user_1, String user_2){
@@ -264,8 +284,7 @@ public class Servidor {
         }
         return 1;
     }
-    
-    
+      
     //funcao para retornar utilizadores online
     public ArrayList<String> utilizadoresOnline(String username){
         ArrayList<String> utilizadores = new ArrayList<>();
@@ -314,10 +333,10 @@ public class Servidor {
      ArrayList<String> getFicheiros(String username) {
         ArrayList<String> ficheiros = new ArrayList<>();
         try {
-            String sql = "SELECT * FROM Ficheiros WHERE Dono = \"" + username + "\"";
+            String sql = "SELECT * FROM Ficheiros WHERE Username = \"" + username + "\"";
             ResultSet rs = stmt.executeQuery(sql);
             while(rs.next()){
-                ficheiros.add(rs.getString("Nome"));
+                ficheiros.add(rs.getString("Nome") + " - " + rs.getString("Tamanho"));
             }
         } catch (SQLException se) {
                 System.out.println("Erro get ficheiros servidor");

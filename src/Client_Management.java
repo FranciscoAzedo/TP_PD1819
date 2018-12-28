@@ -17,7 +17,7 @@ public class Client_Management extends java.util.Observable {
     
     protected String username;
     public static final int TIMEOUT = 10; //segundos
-    public static final String IP = "192.168.1.74";
+    public static final String IP = "192.168.1.90";
     public static final int TCP_PORT = 5001;
     public static final int UDP_PORT = 6001; 
     protected static Socket socket;
@@ -33,7 +33,6 @@ public class Client_Management extends java.util.Observable {
     public static File localDirectory;
 
     public Client_Management() {
-        
         try {
             socket = new Socket(InetAddress.getByName(IP), TCP_PORT);
             socket.setSoTimeout(TIMEOUT*1000);   

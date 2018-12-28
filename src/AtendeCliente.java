@@ -45,7 +45,7 @@ public class AtendeCliente extends Thread {
                         }
                     }
                     else{
-                        p.resultado_Pedido(servidor.efetuarLogin(p.getUsername(), p.getPassword(), cliente));
+                        p.resultado_Pedido(servidor.efetuarLogin(p.getUsername(), p.getPassword(), cliente, p.getPath()));
                     }
                     
                     out.writeObject(pedido);
@@ -71,7 +71,9 @@ public class AtendeCliente extends Thread {
                 }
                 else if(pedido instanceof Pedido_Obter_Ficheiros){
                     Pedido_Obter_Ficheiros p = (Pedido_Obter_Ficheiros) pedido;
+                    System.out.println("Recebi pedido ficheiros para: " + p.username);
                     p.setFicheiros(servidor.getFicheiros(p.getUsername()));
+                    System.out.println("Ficheiros:" + p.getFicheiros());
                     p.setIp(servidor.getIP(p.getUsername()));
                     out.writeObject(pedido);
                     out.flush();

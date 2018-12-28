@@ -1,9 +1,7 @@
 
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Observable;
 import java.util.Scanner;
 
@@ -11,39 +9,51 @@ public class Cliente implements java.util.Observer{
     
     protected static Scanner sc = null;
     protected static Client_Management CM = null;
+    public static final String PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\Ex_20";
     protected static ArrayList<String> utilizadores = null;
     protected static ArrayList<Mensagem> mensagens = null;
     protected static boolean menu = false;
     protected static boolean menuListUsers = false;
+    protected static boolean menuUser = false;
     protected static boolean menuMensagemUser = false;
+    protected static boolean menuFicheirosUser = false;
     protected static String User = null;
     protected static String User_MSG = null;
     
     
     public static void menuMensagensUtilizador(String username){
         String s;
-        Pedido_Obter_Mensagens p = CM.getMensagens(username);
-        if(p != null){
-            mensagens = p.getMensagens();
-            System.out.println("\n\t" + username.toUpperCase() + "\n");
-            for(int j = 0; j < mensagens.size(); j++){
-                   System.out.println(mensagens.get(j).getUser_origem() + ": " + mensagens.get(j).getMensagem());
-               }
-            System.out.println("\n(0 - voltar)");
-            System.out.print(">> ");
-            s = sc.next();
-            if(s.equals("0"))
-                menuUtilizador(username);
-            else{
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Pedido_Escrever_Mensagem pedido = new Pedido_Escrever_Mensagem(new Mensagem(User, username, s, sdf.format(Calendar.getInstance().getTime())));
-                CM.escreverMensagem(pedido);
-                
+        do{
+            Pedido_Obter_Mensagens p = CM.getMensagens(username);
+            if(p != null){
+                mensagens = p.getMensagens();
+                System.out.println("\n\t" + username.toUpperCase() + "\n");
+                for(int j = 0; j < mensagens.size(); j++){
+                       System.out.println(mensagens.get(j).getUser_origem() + ": " + mensagens.get(j).getMensagem());
+                   }
+                System.out.println("\n(0 - voltar)");
+                System.out.print(">> ");
+                s = sc.next();
+                if(s.equals("0")){
+                    menuMensagemUser = false;
+                    menuUser = true;
+                    menuUtilizador(User_MSG);
+                    break;
+                }
+                else{
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Pedido_Escrever_Mensagem pedido = new Pedido_Escrever_Mensagem(new Mensagem(User, username, s, sdf.format(Calendar.getInstance().getTime())));
+                    CM.escreverMensagem(pedido);
+                }
             }
-        }
-        else{
-            menuPrincipal();
-        }
+            else{
+                User_MSG = null;
+                menuMensagemUser = false;
+                menu = true;
+                menuPrincipal();
+                break;
+            }
+        } while(!s.equals("0"));
     }
     
     public static void MenuListaFicheiros(){
@@ -65,6 +75,10 @@ public class Cliente implements java.util.Observer{
         if(i>0){
             CM.TransferirFicheiros(p.ficheiros.get(i), p.getIp());
         }
+        else{
+            menuFicheirosUser = false;
+            menuUtilizador(User_MSG);
+        }
     }
     
     public static void menuUtilizador(String username){
@@ -80,20 +94,22 @@ public class Cliente implements java.util.Observer{
                 System.out.println("\nOpção inválida\n");
             }
         } while(i < 0 || i > 2);
-        
+        menuUser = false;
         switch(i){
             case 0:
+                User_MSG = null;
+                menuListUsers = true;
                 menuListaUtilizadores();
                 break;
             case 1:
+                menuFicheirosUser = true;
                 MenuListaFicheiros();
                 break;
             case 2:
-                User_MSG = username;
+                menuMensagemUser = true;
                 menuMensagensUtilizador(username);
                 break;
         }
-        
     }
     
     public static void atualizaUtilizadores(){
@@ -142,13 +158,13 @@ public class Cliente implements java.util.Observer{
                     System.out.println("\nOpção inválida\n");
                 }
             } while(i < 0 || i > utilizadores.size());
-            
-            if(i == 0){
-                menuListUsers = false;
+            menuListUsers = false;
+            if(i == 0)                
                 menuPrincipal();
-            }
             else{
-                menuUtilizador(utilizadores.get(i-1));
+                menuUser = true;
+                User_MSG = utilizadores.get(i - 1);
+                menuUtilizador(User_MSG);
             }
         }
         
@@ -164,22 +180,18 @@ public class Cliente implements java.util.Observer{
         int i;
         do{
             System.out.println("1 - Ver utilizadores online");
-            System.out.println("2 - Alterar diretoria de ficheiros disponíveis");
-            System.out.println("3 - Alterar ficheiros disponíveis");
-            System.out.println("4 - Alterar diretoria de ficheiros recebidos");
-            System.out.println("5 - Visualizar histórico de transferências");
+            System.out.println("2 - Visualizar histórico de transferências");
             System.out.println("0 - Logout");            
             System.out.print("\n>> ");
             i = sc.nextInt();
-            if (i < 0 || i > 5){
+            if (i < 0 || i > 2){
                 System.out.println("\nOpção inválida\n");
             }
-        } while(i < 0 || i > 5);
-        
+        } while(i < 0 || i > 2);
+        menu = false;
         switch(i){
-            case 0:
-                menu = false;
-                CM.logout(); //falta implementar a parte de alterar variavel online no server
+            case 0:                
+                CM.logout();
                 menuInicial();
                 break;
             case 1:
@@ -187,15 +199,9 @@ public class Cliente implements java.util.Observer{
                 menuListaUtilizadores();
                 break;
             case 2:
-                break;
-            case 3:
-                break;
-            case 4:
-                break;
-            case 5:
+                //ver historico de transferencias
                 break;
         }
-        
     }
     
     public static void preencherDados(int operacao){
@@ -209,10 +215,10 @@ public class Cliente implements java.util.Observer{
         
         switch(operacao){
             case 1:
-                p = new Pedido_Registo(user, password, "Registar");
+                p = new Pedido_Registo(user, password, "Registar", PATH);
                 break;
             case 2:
-                p = new Pedido_Registo(user, password, "Login");
+                p = new Pedido_Registo(user, password, "Login", PATH);
                 break;
         }
         
@@ -284,21 +290,26 @@ public class Cliente implements java.util.Observer{
     @Override
     public void update(Observable o, Object arg) {
         if(arg instanceof String){
-            if(((String) arg).equalsIgnoreCase("Utilizadores")){
+            String[] parts = ((String)arg).split(" ");
+            if((parts[0]).equalsIgnoreCase("Utilizadores")){
                 if (menuListUsers){
                     utilizadores = CM.getUtilizadores().getUtilizadores();
                     atualizaUtilizadores();                    
                 }
-                
-            }else if(((String) arg).equalsIgnoreCase("Mensagem")){
-                if(menuMensagemUser){
+                else if((menuUser || menuMensagemUser) && parts[1].equals(User_MSG)){
+                    System.out.println("\nUtilzador " + User_MSG + " desconectou-se!\n");
+                    menuUser = false;
+                    menuMensagemUser = false;
+                    User_MSG = null;
+                    menuListaUtilizadores();
+                }                
+            }else if(parts[0].equalsIgnoreCase("Mensagem")){
+                if(menuMensagemUser && parts[1].equals(User_MSG)){
                     mensagens = CM.getMensagens(User_MSG).getMensagens();
                     atualizarMensagens();
                 }                
-            }else if(((String) arg).equalsIgnoreCase("Utilizadores")){
-                
             }else{
-                
+                System.out.println("Update desconhecido!");
             }
         }
     }
