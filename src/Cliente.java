@@ -9,7 +9,7 @@ public class Cliente implements java.util.Observer{
     
     protected static Scanner sc = null;
     protected static Client_Management CM = null;
-    public static final String PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\Ex_20";
+    public static final String PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\teste_1";
     protected static ArrayList<String> utilizadores = null;
     protected static ArrayList<Mensagem> mensagens = null;
     protected static boolean menu = false;
@@ -73,14 +73,15 @@ public class Cliente implements java.util.Observer{
             System.out.println("0 - Anterior");
             System.out.print("\n>> ");
             i = sc.nextInt();
-            if (i < 0 || i > 2){
+            if (i < 0 || i > p.ficheiros.size()){
                 System.out.println("\nOpção inválida\n");
             }
-        } while(i < 0 || i > 2);
+        } while(i < 0 || i > p.ficheiros.size());
         
         if(i>0){
-            if(CM.TransferirFicheiros(p.ficheiros.get(i), p.getIp()) == 1)
-                System.out.println("Transferencia do ficheiro " + p.ficheiros.get(i) + " colcuida com sucesso");
+            String [] ficheiro = p.ficheiros.get(i-1).split(" ");
+            if(CM.TransferirFicheiros(User_MSG, ficheiro[0], p.getIp()) == 1)
+                System.out.println("Transferencia do ficheiro " + ficheiro[0] + " colcuida com sucesso");
             else
                 System.out.println("Ocorreu um erro na transferencia do ficheiro!");
         }
@@ -222,6 +223,8 @@ public class Cliente implements java.util.Observer{
                 menuListaUtilizadores();
                 break;
             case 2:
+                listarTransferencias();
+                menuPrincipal();
                 //ver historico de transferencias
                 break;
         }
@@ -296,6 +299,20 @@ public class Cliente implements java.util.Observer{
         
         if (i > 0)
             preencherDados(i);
+    }
+
+    private static void listarTransferencias() {
+        ArrayList<Pedido_Registar_Transferencia> transferencias = CM.getTransferencias(User);
+        if(transferencias.isEmpty()){
+            System.out.println("\nAinda não fez qualquer transferencia!\n");
+        }
+        else{
+            System.out.println("\nHISTORICO DE TRANSFERENCIAS\n");
+            for(int j = 0; j < transferencias.size(); j++){
+                System.out.println(transferencias.get(j).getFicheiro() + "  " + transferencias.get(j).getDono() + "  " + transferencias.get(j).getData());
+            }
+            System.out.println("");
+        }
     }
     
     public void start(){

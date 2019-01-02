@@ -9,6 +9,9 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -22,7 +25,7 @@ public class Client_Management extends java.util.Observable {
     public static final int TIMEOUT = 10; //segundos
     public static final String IP = "192.168.1.74";
     public static String DOWNLOAD_PATH;
-    public static final String SAVE_PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\Ex_20";
+    public static final String SAVE_PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\teste_1";
     public static final int TCP_PORT = 5001;
     public static final int UDP_PORT = 6001; 
     protected static Socket socket;
@@ -127,13 +130,13 @@ public class Client_Management extends java.util.Observable {
         }
     }
      
-    public int TransferirFicheiros(String ficheiro, String ip){
+    public int TransferirFicheiros(String user, String ficheiro, String ip){
         try {
             Socket s = new Socket(InetAddress.getByName(ip), TRANSFER_PORT);
             ObjectOutputStream o = new ObjectOutputStream(s.getOutputStream());
             o.writeObject(ficheiro);
             o.flush();
-            
+            input = s.getInputStream();
             localDirectory = new File(SAVE_PATH);
             
             if(!localDirectory.exists()){
@@ -153,8 +156,14 @@ public class Client_Management extends java.util.Observable {
                     
             localFilePath = localDirectory.getCanonicalPath()+File.separator+ficheiro;
             localFileOutputStream = new FileOutputStream(localFilePath);
-             while((nbytes = input.read(file)) > 0)
-                    localFileOutputStream.write(file,0,nbytes);
+            int vezes = 0;
+             while((nbytes = input.read(file)) > 0){
+                 vezes++;
+                localFileOutputStream.write(file,0,nbytes);
+             }
+             
+             if(vezes == 0)
+                 return -1;
              
         } catch (UnknownHostException ex) {
                 System.out.println("Erro na transferencia de ficheiro: " + ex);
@@ -163,7 +172,19 @@ public class Client_Management extends java.util.Observable {
                 System.out.println("Erro na transferencia de ficheiro: " + ex);
                 return -1;
         }
+        adicionaTransferenciaFicheiro(username, ficheiro, user);
         return 1;
+    }
+    
+    public void adicionaTransferenciaFicheiro(String username, String ficheiro, String user) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            Pedido_Registar_Transferencia p = new Pedido_Registar_Transferencia(username, ficheiro, user, sdf.format(Calendar.getInstance().getTime()));
+            out.writeObject(p);
+            out.flush();
+        } catch (IOException ex) {
+            System.out.println("Erro a registar transferencia: " + ex);
+        }
     }
         
     public void atualizarFicheiro(String fileName, File file, String action){
@@ -247,5 +268,20 @@ public class Client_Management extends java.util.Observable {
             Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    ArrayList<Pedido_Registar_Transferencia> getTransferencias(String User) {
+        try {
+            Pedido_Obter_Transferencias p = new Pedido_Obter_Transferencias(User);
+            out.writeObject(p);
+            out.flush();
+            p = (Pedido_Obter_Transferencias) in.readObject();
+            return p.getTransferencias();
+        } catch (IOException | ClassNotFoundException ex) {
+            System.out.println("Erro a ler transferencias: " + ex);
+            return null;
+        }        
+    }
+
+    
     
 }

@@ -201,7 +201,7 @@ public class Servidor {
                     sql = "DELETE FROM Ficheiros WHERE Username = \"" + username + "\" AND Nome = \"" + fileName + "\"";
                     break;
                 case "modify":
-                    sql = "UPDATE Ficheiros SET Nome = \"" + fileName + "\", Tamanho = \"" + tamanho + "\")";
+                    sql = "UPDATE Ficheiros SET Nome = \"" + fileName + "\", Tamanho = \"" + tamanho + "\"";
                     break;
             }
             System.out.println("Atualizar Ficheiros: " + sql);
@@ -381,6 +381,30 @@ public class Servidor {
                 System.out.println("Erro get ficheiros servidor");
         }
         return ficheiros;
+    }
+     
+     public void registarTransferencia(String username, String ficheiro, String dono, String data){
+        try {
+            String sql = "INSERT INTO Historico (Utilizador, Ficheiro, Dono, Data) VALUES (\"" + username + "\", \"" + ficheiro + "\", \"" + dono + "\", \"" + data + "\");";
+            stmt.executeUpdate(sql);          
+        } catch (SQLException se) {
+                System.out.println("Erro registar transferencia servidor:" + se);
+        }
+    }
+     
+    public ArrayList<Pedido_Registar_Transferencia> getTransferencias(String username){
+        ArrayList<Pedido_Registar_Transferencia> transferencias = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM Historico WHERE Utilizador = \"" + username + "\"";
+            ResultSet rs = stmt.executeQuery(sql);
+            while(rs.next()){
+                transferencias.add(new Pedido_Registar_Transferencia(rs.getString("Utilizador"), rs.getString("Ficheiro"), rs.getString("Dono"), rs.getString("Data")));
+            }
+        } catch (SQLException se) {
+                System.out.println("Erro get transferencias servidor:" + se);
+                return null;
+        }
+        return transferencias;
     }
     
     public int getFalhas(String ip){

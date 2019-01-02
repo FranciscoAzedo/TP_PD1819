@@ -82,6 +82,16 @@ public class Atende_Cliente extends Thread {
                     Pedido_Alterar_Ficheiro p = (Pedido_Alterar_Ficheiro)pedido;
                     servidor.alterarFicheiro(p.getUsername(), p.getFileName(), p.getTamanho(), p.getAction());
                 }
+                else if(pedido instanceof Pedido_Registar_Transferencia){
+                    Pedido_Registar_Transferencia p = (Pedido_Registar_Transferencia)pedido;
+                    servidor.registarTransferencia(p.getUsername(), p.getFicheiro(), p.getDono(), p.getData());
+                }
+                else if(pedido instanceof Pedido_Obter_Transferencias){
+                    Pedido_Obter_Transferencias p = (Pedido_Obter_Transferencias)pedido;
+                    p.setTransferencias(servidor.getTransferencias(p.getUsername()));
+                    out.writeObject(p);
+                    out.flush();
+                }
                 else if(pedido instanceof String){
                     if (pedido.equals("logout")){
                         servidor.efetuarLogout(cliente);
