@@ -24,7 +24,7 @@ public class Client_Update_TCP extends Thread {
                 if (update instanceof String)
                     CM.update((String) update);
                 else if(update instanceof Mensagem)
-                    CM.update("Mensagem");
+                    CM.update("Mensagem " + ((Mensagem) update).getUser_origem());
             } catch (IOException e) {
                 try {
                     System.out.println("Erro thread Client Update TCP"); 
@@ -32,7 +32,7 @@ public class Client_Update_TCP extends Thread {
                 } catch (IOException ex) {
                 }
             } catch (ClassNotFoundException e) {
-                Logger.getLogger(AtendeCliente.class.getName()).log(Level.SEVERE, null, e);
+                Logger.getLogger(Atende_Cliente.class.getName()).log(Level.SEVERE, null, e);
             }
         }
     }

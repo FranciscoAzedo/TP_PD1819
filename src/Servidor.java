@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class Servidor {
                     }
                 }
                 if (!igual){
-                    Thread t = new AtendeCliente(cliente, this);
+                    Thread t = new Atende_Cliente(cliente, this);
                     t.setDaemon(true);
                     t.start();
                 }
@@ -127,7 +128,7 @@ public class Servidor {
                 if(u.getInetAddress().equals(s.getInetAddress()))
                     it.remove();
             }
-            atualizarClientes("Utilizadores");
+            atualizarClientes("Utilizadores " + clientes.get(s));
             Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
             t.setDaemon(true);
             t.start();
@@ -156,7 +157,7 @@ public class Servidor {
                         stmt.executeUpdate(sql);
                         registarFicheiros(username, Path);
                         clientes.put(s, username);
-                        atualizarClientes("Utilizadores");
+                        atualizarClientes("Utilizadores " + username);
                         Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
                         t.setDaemon(true);
                         t.start();
@@ -171,7 +172,7 @@ public class Servidor {
     
     public void registarFicheiros(String username, String Path){
         try{
-            String sql = "DELETE FROM Ficheiros WHERE USername = \"" + username + "\"";
+            String sql = "DELETE FROM Ficheiros WHERE Username = \"" + username + "\"";
             stmt.executeUpdate(sql);        
             File folder = new File(Path);
             File[] listOfFiles = folder.listFiles();
@@ -188,6 +189,28 @@ public class Servidor {
             System.out.println("Erro registar ficheiros servidor:" + ex);
         }
     }
+    
+    public void alterarFicheiro(String username, String fileName, String tamanho, String action){
+        try {
+            String sql = null;
+            switch(action){
+                case "add":
+                    sql = "INSERT INTO Ficheiros (Username, Nome, Tamanho) VALUES (\"" + username + "\", \"" + fileName + "\", \"" + tamanho + "\")";
+                    break;
+                case "delete":
+                    sql = "DELETE FROM Ficheiros WHERE Username = \"" + username + "\" AND Nome = \"" + fileName + "\"";
+                    break;
+                case "modify":
+                    sql = "UPDATE Ficheiros SET Nome = \"" + fileName + "\", Tamanho = \"" + tamanho + "\")";
+                    break;
+            }
+            System.out.println("Atualizar Ficheiros: " + sql);
+            stmt.execute(sql); 
+            atualizarClientes("Ficheiros " + username);
+        } catch (SQLException e) {
+            System.out.println("Erro a atualizar ficheiro Servidor: " + e);
+        }
+    }
 
     public ArrayList<Mensagem> getMensagens(String user_1, String user_2){
         ArrayList<Mensagem> mensagens = new ArrayList<>();
@@ -202,6 +225,9 @@ public class Servidor {
         } catch (SQLException se) {
                 System.out.println("Erro get mensagens servidor : " + se);
         }
+        
+        Collections.sort(mensagens, (o1, o2) -> o1.getData().compareTo(o2.getData()));
+        
         return mensagens;
     }
     
@@ -221,7 +247,21 @@ public class Servidor {
                 }
             }                
         } catch (SQLException se) {
-            System.out.println("Erro efetuar login servidor");
+            System.out.println("Erro getIP servidor");
+            return null;
+        }
+    }
+    
+    public String getUsername(String IP){
+        try {
+            String sql = "SELECT * FROM Utilizadores WHERE IP = \"" + IP + "\"";
+            ResultSet rs = stmt.executeQuery(sql);
+            if (!rs.next())
+                return null;
+            else
+                return rs.getString("Username");
+        } catch (SQLException se) {
+            System.out.println("Erro getUSername servidor");
             return null;
         }
     }
@@ -307,7 +347,6 @@ public class Servidor {
             String sql = "SELECT * FROM Utilizadores WHERE Online = 1";
             ResultSet rs = stmt.executeQuery(sql);
             while(rs.next()){
-                //rs.getInt("Online") == 1 && 
                 if (!clientes.values().contains(rs.getString("Username")))
                     utilizadores.put(rs.getString("IP"), rs.getString("Username")); 
             }
@@ -321,8 +360,8 @@ public class Servidor {
      try {
             String sql = "UPDATE Utilizadores SET Online = 0, IP = NULL, Falhas = 0 WHERE IP = \"" + ip + "\"";
             stmt.executeUpdate(sql);
-            atualizarClientes("Utilizadores");
-            Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores");
+            atualizarClientes("Utilizadores " + getUsername(ip));
+            Thread t = new Send_Updates_UDP(utilizadoresOutrosServidores(), "Utilizadores " + getUsername(ip));
             t.setDaemon(true);
             t.start();
         } catch (SQLException e) {

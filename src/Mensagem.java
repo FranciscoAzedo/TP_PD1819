@@ -1,9 +1,7 @@
 
 import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.Date;
 
-public class Mensagem implements Serializable{
+public class Mensagem implements Serializable {
     private final String user_origem;
     private final String user_destino;
     private final String mensagem;

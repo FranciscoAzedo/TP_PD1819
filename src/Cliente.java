@@ -33,7 +33,7 @@ public class Cliente implements java.util.Observer{
                    }
                 System.out.println("\n(0 - voltar)");
                 System.out.print(">> ");
-                s = sc.next();
+                s = sc.nextLine();
                 if(s.equals("0")){
                     menuMensagemUser = false;
                     menuUser = true;
@@ -61,9 +61,15 @@ public class Cliente implements java.util.Observer{
         Pedido_Obter_Ficheiros p = CM.getFicheiros(User_MSG);
         do{
             System.out.println("\n\t" + User_MSG.toUpperCase() + "\n");
-            for(int j = 0; j < p.ficheiros.size(); j++){
-                System.out.println(j+1 + " - " + p.ficheiros.get(j));
+      
+            if(p.ficheiros.isEmpty())
+                System.out.println("Não existem ficheiros para trnasferencia!");
+            else{
+                for(int j = 0; j < p.ficheiros.size(); j++){
+                    System.out.println(j+1 + " - " + p.ficheiros.get(j));
+                }
             }
+            
             System.out.println("0 - Anterior");
             System.out.print("\n>> ");
             i = sc.nextInt();
@@ -73,12 +79,14 @@ public class Cliente implements java.util.Observer{
         } while(i < 0 || i > 2);
         
         if(i>0){
-            CM.TransferirFicheiros(p.ficheiros.get(i), p.getIp());
+            if(CM.TransferirFicheiros(p.ficheiros.get(i), p.getIp()) == 1)
+                System.out.println("Transferencia do ficheiro " + p.ficheiros.get(i) + " colcuida com sucesso");
+            else
+                System.out.println("Ocorreu um erro na transferencia do ficheiro!");
         }
-        else{
-            menuFicheirosUser = false;
-            menuUtilizador(User_MSG);
-        }
+        
+        menuFicheirosUser = false;
+        menuUtilizador(User_MSG);
     }
     
     public static void menuUtilizador(String username){
@@ -133,6 +141,21 @@ public class Cliente implements java.util.Observer{
                }
             System.out.println("\n(0 - voltar)");
             System.out.print(">> ");
+    }
+    
+    public static void atualizarFicheiros(ArrayList<String> ficheiros){
+        System.out.println("\n\t" + User_MSG.toUpperCase() + "\n");
+      
+            if(ficheiros.isEmpty())
+                System.out.println("Não existem ficheiros para trnasferencia!");
+            else{
+                for(int j = 0; j < ficheiros.size(); j++){
+                    System.out.println(j+1 + " - " + ficheiros.get(j));
+                }
+            }
+            
+            System.out.println("0 - Anterior");
+            System.out.print("\n>> ");
     }
     
     public static void menuListaUtilizadores(){
@@ -231,7 +254,7 @@ public class Cliente implements java.util.Observer{
                     }
                     else{
                         System.out.println("\nLogin efetuado com sucesso!\n");
-                        CM.login(user);
+                        CM.login(user, PATH);
                         User = user;
                         menu = true;
                     }
@@ -296,19 +319,23 @@ public class Cliente implements java.util.Observer{
                     utilizadores = CM.getUtilizadores().getUtilizadores();
                     atualizaUtilizadores();                    
                 }
-                else if((menuUser || menuMensagemUser) && parts[1].equals(User_MSG)){
-                    System.out.println("\nUtilzador " + User_MSG + " desconectou-se!\n");
-                    menuUser = false;
-                    menuMensagemUser = false;
-                    User_MSG = null;
-                    menuListaUtilizadores();
+                else if(parts[1].equals(User_MSG)){
+                    System.out.println("\n\nUtilzador " + User_MSG + " desconectou-se!\n");
+                    if(menuMensagemUser)
+                        System.out.println("\n(0 - voltar)");
+                    System.out.print(">> ");
                 }                
             }else if(parts[0].equalsIgnoreCase("Mensagem")){
                 if(menuMensagemUser && parts[1].equals(User_MSG)){
                     mensagens = CM.getMensagens(User_MSG).getMensagens();
                     atualizarMensagens();
                 }                
-            }else{
+            }else if(parts[0].equalsIgnoreCase("Ficheiros")){
+                if(menuFicheirosUser && parts[1].equals(User_MSG)){
+                    atualizarFicheiros(CM.getFicheiros(User_MSG).getFicheiros());                    
+                }
+            }
+            else{
                 System.out.println("Update desconhecido!");
             }
         }

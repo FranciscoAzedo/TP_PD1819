@@ -7,14 +7,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class AtendeCliente extends Thread {
+public class Atende_Cliente extends Thread {
     
     private Socket cliente;
     private static Servidor servidor;
     private ObjectInputStream oin;
     private ObjectOutputStream out;
     
-    public AtendeCliente(Socket s, Servidor serv){
+    public Atende_Cliente(Socket s, Servidor serv){
         try {
             cliente = s;
             servidor = serv;
@@ -78,6 +78,10 @@ public class AtendeCliente extends Thread {
                     out.writeObject(pedido);
                     out.flush();
                 }
+                else if(pedido instanceof Pedido_Alterar_Ficheiro){
+                    Pedido_Alterar_Ficheiro p = (Pedido_Alterar_Ficheiro)pedido;
+                    servidor.alterarFicheiro(p.getUsername(), p.getFileName(), p.getTamanho(), p.getAction());
+                }
                 else if(pedido instanceof String){
                     if (pedido.equals("logout")){
                         servidor.efetuarLogout(cliente);
@@ -91,7 +95,7 @@ public class AtendeCliente extends Thread {
                 } catch (IOException ex) {
                 }
             } catch (ClassNotFoundException e) {
-                Logger.getLogger(AtendeCliente.class.getName()).log(Level.SEVERE, null, e);
+                Logger.getLogger(Atende_Cliente.class.getName()).log(Level.SEVERE, null, e);
             }
         }
     }

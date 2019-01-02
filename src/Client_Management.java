@@ -9,6 +9,9 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,7 +20,9 @@ public class Client_Management extends java.util.Observable {
     
     protected String username;
     public static final int TIMEOUT = 10; //segundos
-    public static final String IP = "192.168.1.90";
+    public static final String IP = "192.168.1.74";
+    public static String DOWNLOAD_PATH;
+    public static final String SAVE_PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\Ex_20";
     public static final int TCP_PORT = 5001;
     public static final int UDP_PORT = 6001; 
     protected static Socket socket;
@@ -122,27 +127,29 @@ public class Client_Management extends java.util.Observable {
         }
     }
      
-    public void TransferirFicheiros(String ficheiro, String ip){
+    public int TransferirFicheiros(String ficheiro, String ip){
         try {
             Socket s = new Socket(InetAddress.getByName(ip), TRANSFER_PORT);
             ObjectOutputStream o = new ObjectOutputStream(s.getOutputStream());
             o.writeObject(ficheiro);
             o.flush();
             
+            localDirectory = new File(SAVE_PATH);
+            
             if(!localDirectory.exists()){
-            System.out.println("A directoria " + localDirectory + " nao existe!");
-            return;
-        }
+                System.out.println("A directoria " + localDirectory + " nao existe!");
+                return -1;
+            }
         
-        if(!localDirectory.isDirectory()){
-            System.out.println("O caminho " + localDirectory + " nao se refere a uma directoria!");
-            return;
-        }
+            if(!localDirectory.isDirectory()){
+                System.out.println("O caminho " + localDirectory + " nao se refere a uma directoria!");
+                return -1;
+            }
         
-        if(!localDirectory.canWrite()){
-            System.out.println("Sem permissoes de escrita na directoria " + localDirectory);
-            return;
-        }
+            if(!localDirectory.canWrite()){
+                System.out.println("Sem permissoes de escrita na directoria " + localDirectory);
+                return -1;
+            }
                     
             localFilePath = localDirectory.getCanonicalPath()+File.separator+ficheiro;
             localFileOutputStream = new FileOutputStream(localFilePath);
@@ -150,20 +157,39 @@ public class Client_Management extends java.util.Observable {
                     localFileOutputStream.write(file,0,nbytes);
              
         } catch (UnknownHostException ex) {
-            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Erro na transferencia de ficheiro: " + ex);
+                return -1;
         } catch (IOException ex) {
-            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Erro na transferencia de ficheiro: " + ex);
+                return -1;
         }
+        return 1;
     }
         
-    public void login(String username){
+    public void atualizarFicheiro(String fileName, File file, String action){
+        try {
+            String tamanho;
+            if(file.length() / 1024 + 1 < 1024)
+                tamanho = (file.length() / 1024 + 1) + " KB";
+            else
+                tamanho = ((file.length() / 1024 + 1) / 1024 + 1) + " MB";
+            Pedido_Alterar_Ficheiro p = new Pedido_Alterar_Ficheiro(username, fileName, action, tamanho);
+            out.writeObject(p);
+            out.flush();
+        } catch (IOException e) {
+            System.out.println("Erro atualizar ficheiros Client Management: " + e);
+        }
+    }
+    
+    public void login(String username, String path){
         this.username = username;
+        DOWNLOAD_PATH = path;
         try {
             socket = new Socket(InetAddress.getByName(IP), TCP_PORT);
             Thread t = new Client_Update_TCP(socket, this);
             t.setDaemon(true);
             t.start();
-            t = new Client_Update_UDP(IP, this);
+            t = new Client_Update_UDP("localhost", this);
             t.setDaemon(true);
             t.start();
             t = new Thread(
@@ -175,6 +201,14 @@ public class Client_Management extends java.util.Observable {
             );
             t.setDaemon(true);
             t.start();
+            Timer timer = new Timer();
+            TimerTask task = new Dir_Watcher(path){
+                @Override
+                protected void onChange(File file, String action){
+                    atualizarFicheiro(file.getName(), file, action);
+                }
+            };
+            timer.schedule(task, new Date(), 1000);
         } catch (IOException e) {
             System.out.println("Erro login Client Management:" + e);
         }
@@ -183,10 +217,12 @@ public class Client_Management extends java.util.Observable {
     public void logout(){
         try {
             out.writeObject("logout");
+            out.flush();
         } catch (IOException e) {
             System.out.println("Erro logout Client Management");
         }
         username = null;
+        DOWNLOAD_PATH = null;
     }
     
     public void update(String update){
@@ -197,9 +233,10 @@ public class Client_Management extends java.util.Observable {
     public void ThreadPedidosFicheiro(){
         try {
             serverSocket = new ServerSocket(TRANSFER_PORT);
+            System.out.println("Thread transferencia iniciada no porto:" + TRANSFER_PORT);
             while(!serverSocket.isClosed()){
                 try{
-                    Thread t = new atendePedidoFicheiro(serverSocket.accept());
+                    Thread t = new Atende_Pedido_Ficheiro(serverSocket.accept(), DOWNLOAD_PATH);
                     t.setDaemon(true);
                     t.start();
                 } catch (IOException ex) {
