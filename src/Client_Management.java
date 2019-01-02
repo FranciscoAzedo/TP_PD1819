@@ -6,9 +6,13 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -23,7 +27,7 @@ public class Client_Management extends java.util.Observable {
     
     protected String username;
     public static final int TIMEOUT = 10; //segundos
-    public static final String IP = "192.168.1.74";
+    public static final String IP = "10.8.10.111";
     public static String DOWNLOAD_PATH;
     public static final String SAVE_PATH = "C:\\\\Users\\\\franc\\\\Desktop\\\\teste_1";
     public static final int TCP_PORT = 5001;
@@ -32,6 +36,7 @@ public class Client_Management extends java.util.Observable {
     protected static ObjectInputStream in = null;
     protected static ObjectOutputStream out = null;
     protected static ServerSocket serverSocket;
+    protected static ServidorInterface servidorRMI = null;
     public static final int TRANSFER_PORT = 4002;
     public static byte[] file = new byte[4000];
     public static InputStream input;
@@ -70,15 +75,13 @@ public class Client_Management extends java.util.Observable {
         
         try {
             Pedido_Utilizadores p = new Pedido_Utilizadores(username);
-            out.writeObject(p);
-            out.flush();
-            p =  (Pedido_Utilizadores) in.readObject();
+            p.setUtilizadores(servidorRMI.utilizadoresOnline(username));
+//            out.writeObject(p);
+//            out.flush();
+//            p =  (Pedido_Utilizadores) in.readObject();
             return p;
         } catch (IOException e) {
             System.out.println("Erro get utilizadores Client Management");
-            return null;
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Cliente.class.getName()).log(Level.SEVERE, null, ex);
             return null;
         }
     }
@@ -115,12 +118,15 @@ public class Client_Management extends java.util.Observable {
     }
     
     public Pedido_Obter_Ficheiros getFicheiros(String username){
-        Pedido_Obter_Ficheiros p = new Pedido_Obter_Ficheiros(username);
+        Pedido_Obter_Ficheiros pedido = new Pedido_Obter_Ficheiros(username);
+        Pedido_Obter_IP p = new Pedido_Obter_IP(username);
         try{
             out.writeObject(p);
             out.flush();
-            p = (Pedido_Obter_Ficheiros) in.readObject();
-            return p;
+            p = (Pedido_Obter_IP) in.readObject();
+            pedido.setIp(p.getIP());
+            pedido.setFicheiros(servidorRMI.getFicheiros(username));
+            return pedido;
         } catch (IOException e) {
             System.out.println("Erro obter ficheiros Client Management");
             return null;
@@ -206,6 +212,8 @@ public class Client_Management extends java.util.Observable {
         this.username = username;
         DOWNLOAD_PATH = path;
         try {
+            String objectUrl = "rmi://" + IP + "/ServidorRMI";
+            servidorRMI = (ServidorInterface) Naming.lookup(objectUrl);
             socket = new Socket(InetAddress.getByName(IP), TCP_PORT);
             Thread t = new Client_Update_TCP(socket, this);
             t.setDaemon(true);
@@ -232,6 +240,8 @@ public class Client_Management extends java.util.Observable {
             timer.schedule(task, new Date(), 1000);
         } catch (IOException e) {
             System.out.println("Erro login Client Management:" + e);
+        } catch (NotBoundException ex) {
+            Logger.getLogger(Client_Management.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

@@ -9,14 +9,20 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class Servidor {
+public class Servidor extends UnicastRemoteObject implements ServidorInterface{
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     private static final String DB_URL = "jdbc:mysql://localhost:3306/pd1819?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
     
@@ -33,8 +39,9 @@ public class Servidor {
     
     public static final int TCP_PORT = 5001;
     public static final int UDP_PORT = 6001;
+    public static final String SERVICE_NAME = "ServidorRMI";
 
-    public Servidor() {
+    public Servidor() throws RemoteException{
         clientes = new HashMap<>();
         updates = new HashMap<>();
         
@@ -324,22 +331,6 @@ public class Servidor {
         }
         return 1;
     }
-      
-    //funcao para retornar utilizadores online
-    public ArrayList<String> utilizadoresOnline(String username){
-        ArrayList<String> utilizadores = new ArrayList<>();
-        try {
-            String sql = "SELECT * FROM Utilizadores";
-            ResultSet rs = stmt.executeQuery(sql);
-            while(rs.next()){
-                if (rs.getInt("Online") == 1 && !rs.getString("Username").equalsIgnoreCase(username))
-                    utilizadores.add(rs.getString("Username")); 
-            }
-        } catch (SQLException se) {
-                System.out.println("Erro utilizadores online servidor");
-        }
-        return utilizadores;
-    }
     
     public HashMap<String, String> utilizadoresOutrosServidores(){
         HashMap<String, String> utilizadores = new HashMap<>();
@@ -369,7 +360,7 @@ public class Servidor {
         }   
     }
     
-     ArrayList<String> getFicheiros(String username) {
+     public ArrayList<String> getFicheiros(String username) throws RemoteException{
         ArrayList<String> ficheiros = new ArrayList<>();
         try {
             String sql = "SELECT * FROM Ficheiros WHERE Username = \"" + username + "\"";
@@ -381,6 +372,22 @@ public class Servidor {
                 System.out.println("Erro get ficheiros servidor");
         }
         return ficheiros;
+    }
+     
+     //funcao para retornar utilizadores online
+    public ArrayList<String> utilizadoresOnline(String username) throws RemoteException{
+        ArrayList<String> utilizadores = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM Utilizadores";
+            ResultSet rs = stmt.executeQuery(sql);
+            while(rs.next()){
+                if (rs.getInt("Online") == 1 && !rs.getString("Username").equalsIgnoreCase(username))
+                    utilizadores.add(rs.getString("Username")); 
+            }
+        } catch (SQLException se) {
+                System.out.println("Erro utilizadores online servidor");
+        }
+        return utilizadores;
     }
      
      public void registarTransferencia(String username, String ficheiro, String dono, String data){
@@ -450,13 +457,29 @@ public class Servidor {
             conn = DriverManager.getConnection(DB_URL,USER,PASS);
             System.out.println("Creating statement...");
             stmt = conn.createStatement();
-            
-            Servidor server = new Servidor();
-            server.lancaThreads();
-            server.receberClientes();
-            
+            try{
+                Registry r;
+                try{
+                    System.out.println("Tentativa de lancamento do registry no porto " + 
+                                        Registry.REGISTRY_PORT + "...");
+                    r = LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+                    System.out.println("Registry lancado!");
+                }catch(RemoteException e){
+                    System.out.println("Registry provavelmente ja' em execucao!");
+                    r = LocateRegistry.getRegistry();          
+                }
+                Servidor server = new Servidor();
+                r.bind(SERVICE_NAME, server);
+                System.out.println("Servico " + SERVICE_NAME + " registado no registry...");
+                server.lancaThreads();
+                server.receberClientes();            
+                System.out.println("Servico GetRemoteFile criado e em execucao ("+server.getRef().remoteToString()+"...");
+            }catch(Exception e){
+                System.out.println("Erro - " + e);
+                System.exit(1);
+            }        
         }catch(SQLException se){
-                System.out.println("Erro main servidor");
+            System.out.println("Erro main servidor");
         }
         finally{
             try{

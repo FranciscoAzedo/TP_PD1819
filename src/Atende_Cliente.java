@@ -78,6 +78,12 @@ public class Atende_Cliente extends Thread {
                     out.writeObject(pedido);
                     out.flush();
                 }
+                else if(pedido instanceof Pedido_Obter_IP){
+                    Pedido_Obter_IP p = (Pedido_Obter_IP)pedido;
+                    p.setIP(servidor.getIP(p.getUsername()));
+                    out.writeObject(pedido);
+                    out.flush();
+                }
                 else if(pedido instanceof Pedido_Alterar_Ficheiro){
                     Pedido_Alterar_Ficheiro p = (Pedido_Alterar_Ficheiro)pedido;
                     servidor.alterarFicheiro(p.getUsername(), p.getFileName(), p.getTamanho(), p.getAction());
